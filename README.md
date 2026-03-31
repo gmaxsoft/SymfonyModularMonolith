@@ -20,13 +20,7 @@ Poniżej opisane są decyzje odpowiadające strukturze tego repozytorium.
 
 ### 1. Układ katalogów
 
-- `src/Modules/<NazwaModułu>/` — kod modułu funkcjonalnego, np. `SampleModule`.
-  - `Controller/` — kontrolery HTTP z atrybutami routingu.
-  - `Service/` — logika aplikacyjna modułu.
-  - `Repository/` — repozytoria (np. Doctrine `ServiceEntityRepository`).
-  - `Entity/` — encje ORM (mapowane osobno; **nie** rejestrowane automatycznie jako usługi DI).
-  - `Resources/config/` — opcjonalna konfiguracja modułu (np. dodatkowe pliki YAML).
-- `src/Shared/` — wspólny szkielet aplikacji (np. `Kernel`, w przyszłości współdzielone encje w `Shared/Entity/`).
+Pełne drzewo katalogów, tabele opisów modułów i ścieżek w korzeniu — w sekcji [Struktura projektu](#struktura-projektu).
 
 ### 2. Autoload (`composer.json`)
 
@@ -61,6 +55,93 @@ Dzięki temu kontrolery, serwisy i repozytoria modułów są **autowire’owane*
 - **PHPUnit** — szablon konfiguracji (`phpunit.dist.xml`, `tests/bootstrap.php`), środowisko testowe `APP_ENV=test`, `KERNEL_CLASS` ustawiony na `App\Shared\Kernel`.
 - **Psalm** (`psalm.xml`) z wtyczką **Symfony** i plikiem kontenera w trybie dev (po `cache:warmup`).
 - **PHP CS Fixer** (`.php-cs-fixer.dist.php`) z zestawem reguł `@Symfony`; skanowanie ograniczone do `src`, `tests`, `config`, `bin`, `public`, `migrations` (bez `vendor`).
+
+## Struktura projektu
+
+Poniżej zestawiono katalogi i pliki istotne dla architektury oraz narzędzi. Pozycje `var/` i `vendor/` powstają lokalnie po uruchomieniu aplikacji lub `composer install` i **nie** są zwykle commitowane (patrz `.gitignore`).
+
+```
+.
+├── .github/
+│   └── workflows/
+│       └── ci.yml              # GitHub Actions: PHPUnit, PHP CS Fixer, Psalm
+├── bin/
+│   ├── console                 # Konsola Symfony (polecenia aplikacji)
+│   └── phpunit                 # Uruchamiacz PHPUnit z Composer
+├── config/
+│   ├── bundles.php             # Rejestracja pakietów (bundli)
+│   ├── packages/               # Fragmenty konfiguracji per pakiet (Doctrine, Framework, routing…)
+│   ├── routes/                 # Dodatkowe definicje routingu (np. framework)
+│   ├── routes.yaml             # Główny import tras (w tym modułów)
+│   ├── services.yaml           # Kontener DI: skanowanie src/ i src/Modules/
+│   ├── preload.php
+│   └── reference.php           # Referencja konfiguracji (generowana / narzędziowa)
+├── migrations/                 # Klasy migracji Doctrine (wersjonowanie schematu bazy)
+├── public/
+│   └── index.php               # Front controller HTTP (wejście do aplikacji)
+├── src/
+│   ├── Controller/             # (szkielet Flex) — puste; kontrolery aplikacji są w modułach
+│   ├── Entity/                 # (szkielet Flex) — puste; encje dzielone: Shared/Entity, moduły: Modules/*/Entity
+│   ├── Modules/                # Moduły domenowe (logika „w paczkach”)
+│   │   └── SampleModule/
+│   │       ├── Controller/
+│   │       ├── Entity/
+│   │       ├── Repository/
+│   │       ├── Resources/
+│   │       │   └── config/     # Opcjonalna konfiguracja modułu (YAML)
+│   │       └── Service/
+│   ├── Repository/             # (szkielet Flex) — puste; repozytoria wewnątrz modułów
+│   └── Shared/                 # Kod współdzielony całą aplikacją
+│       ├── Entity/             # Encje wspólne (mapowanie Doctrine: alias App\Shared\Entity)
+│       └── Kernel.php          # Kernel aplikacji (App\Shared\Kernel)
+├── tests/
+│   └── bootstrap.php           # Start PHPUnit (Dotenv, APP_DEBUG)
+├── .editorconfig               # Ujednolicenie edytora (wcięcia, końce linii)
+├── .env                        # Domyślne zmienne środowiskowe (szablon; sekrety → .env.local)
+├── .env.dev / .env.test        # Warianty środowiska (test: KERNEL_CLASS, APP_SECRET)
+├── .gitignore
+├── .php-cs-fixer.dist.php      # Reguły PHP CS Fixer (@Symfony)
+├── compose.yaml                # Docker Compose (opcjonalny stack)
+├── compose.override.yaml       # Nadpisania lokalne dla Compose
+├── composer.json / composer.lock
+├── LICENSE                     # Licencja Maxsoft
+├── phpunit.dist.xml            # Konfiguracja PHPUnit
+├── psalm.xml                   # Analiza statyczna + wtyczka Symfony
+├── README.md
+└── symfony.lock                # Wersje recept Symfony Flex (powiązane z composer.lock)
+```
+
+### Opis katalogów i plików w korzeniu repozytorium
+
+| Ścieżka | Opis |
+|--------|------|
+| `.github/workflows/` | Definicje **GitHub Actions** (ciągła integracja). |
+| `bin/` | Skrypty wykonywalne z CLI: **`console`** (Symfony), **`phpunit`**. |
+| `config/` | Cała konfiguracja aplikacji: **usługi**, **trasy**, **bundles**, pliki w **`packages/`** dla Doctrine, Framework, cache itd. |
+| `migrations/` | Pliki migracji **Doctrine** — historia zmian schematu bazy. |
+| `public/` | Jedyny katalog serwowany na zewnątrz; **`index.php`** przekazuje żądania do kernela. |
+| `src/` | Kod źródłowy PHP: **moduły** (`Modules/`), **współdzielony** kod (`Shared/`), oraz puste szkielety `Controller` / `Entity` / `Repository` z Flexa (można usunąć lub wykorzystać poza modułami). |
+| `tests/` | Testy automatyczne; **`bootstrap.php`** ładuje `.env` i przygotowuje środowisko `test`. |
+| `var/` | Cache, logi, sesje — generowane w runtime (**gitignore**). |
+| `vendor/` | Biblioteki z **Composera** (**gitignore**). |
+
+### Moduł (`src/Modules/<Nazwa>/`)
+
+| Podkatalog | Opis |
+|------------|------|
+| `Controller/` | Klasy obsługujące HTTP; trasy przez atrybut `#[Route]` (import z `config/routes.yaml`). |
+| `Entity/` | Encje **Doctrine**; mapowane w `doctrine.yaml`; **nie** wchodzą do autowiringu jako serwisy. |
+| `Repository/` | Repozytoria (np. `ServiceEntityRepository`); rejestrowane jako usługi **DI**. |
+| `Service/` | Serwisy domenowe / aplikacyjne modułu. |
+| `Resources/config/` | Opcjonalne YAML/XML modułu; domyślnie **wyłączone** z automatycznego skanowania usług — import ręczny, gdy potrzebny. |
+| `DependencyInjection/` | (Opcjonalnie) rozszerzenia kontenera danego modułu — wyłączone ze skanowania w `services.yaml`. |
+
+### Współdzielony kod (`src/Shared/`)
+
+| Element | Opis |
+|---------|------|
+| `Kernel.php` | Główna klasa kernela (`App\Shared\Kernel`); **`public/index.php`** i **`bin/console`** ją ładują. |
+| `Entity/` | Encje używane przez wiele modułów; prefiks nazewnictwa **`App\Shared\Entity`**. |
 
 ## Stack technologiczny
 
