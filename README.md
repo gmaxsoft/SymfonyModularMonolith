@@ -151,7 +151,7 @@ Poniżej zestawiono katalogi i pliki istotne dla architektury oraz narzędzi. Po
 | Framework | **Symfony 7.4** (komponenty zgrupowane przez `symfony/framework-bundle`) |
 | ORM / baza | **Doctrine ORM 3**, **Doctrine Bundle 2**, **Doctrine Migrations** |
 | Konfiguracja | YAML, atrybuty PHP (`#[Route]`, mapowanie encji) |
-| Testy | **PHPUnit 12** |
+| Testy | **PHPUnit 11** (zgodność z PHP **8.2** w CI; lokalnie można użyć nowszego PHP) |
 | Statyczna analiza | **Psalm 6** + `psalm/plugin-symfony` |
 | Formatowanie kodu | **PHP CS Fixer 3** |
 | HTTP (dev tests) | **BrowserKit**, **DomCrawler**, **CssSelector** |
@@ -163,7 +163,7 @@ Poniżej zestawiono katalogi i pliki istotne dla architektury oraz narzędzi. Po
 W repozytorium skonfigurowano ciągłą integrację w pliku [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 - **Zdarzenia:** push oraz pull requesty do gałęzi `main`.
-- **Środowisko:** `ubuntu-latest`, **PHP 8.2** z rozszerzeniami `ctype`, `iconv`, `mbstring`, `intl`, `pdo_sqlite`.
+- **Środowisko:** `ubuntu-latest`, **PHP 8.2** z rozszerzeniami `ctype`, `iconv`, `mbstring`, `intl`, `pdo_sqlite` (PHPUnit w projekcie dobrane pod **PHP 8.2**; seria **PHPUnit 12** wymagałaby **PHP 8.3+**).
 - **Zmienne w jobie:** m.in. `APP_SECRET`, `DATABASE_URL` wskazujące na plik **SQLite** w `var/ci.sqlite` (wyłącznie pod rozgrzanie cache i narzędzia — bez konieczności działającego serwera SQL).
 - **Kolejność kroków:**
   1. `composer install`
