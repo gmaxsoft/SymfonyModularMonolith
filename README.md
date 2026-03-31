@@ -1,5 +1,7 @@
 # Symfony Modular Monolith (Monolit modularny)
 
+[![CI](https://github.com/gmaxsoft/SymfonyModularMonolith/actions/workflows/ci.yml/badge.svg)](https://github.com/gmaxsoft/SymfonyModularMonolith/actions/workflows/ci.yml)
+
 Aplikacja demonstracyjna i szablon **Symfony 7** zorganizowany jako **modularny monolit**: jedno wdrożenie, jedna baza kodu, ale logika biznesowa podzielona na **moduły** z jasnymi granicami katalogów, zamiast wielu niezależnych mikrousług.
 
 ## Czym jest modularny monolit?
@@ -72,7 +74,25 @@ Dzięki temu kontrolery, serwisy i repozytoria modułów są **autowire’owane*
 | Statyczna analiza | **Psalm 6** + `psalm/plugin-symfony` |
 | Formatowanie kodu | **PHP CS Fixer 3** |
 | HTTP (dev tests) | **BrowserKit**, **DomCrawler**, **CssSelector** |
+| CI | **GitHub Actions** (PHPUnit, PHP CS Fixer, Psalm — patrz niżej) |
 | Opcjonalnie | Docker: `compose.yaml` / `compose.override.yaml` (jeśli używasz lokalnego stacku kontenerów) |
+
+## GitHub Actions
+
+W repozytorium skonfigurowano ciągłą integrację w pliku [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+- **Zdarzenia:** push oraz pull requesty do gałęzi `main`.
+- **Środowisko:** `ubuntu-latest`, **PHP 8.2** z rozszerzeniami `ctype`, `iconv`, `mbstring`, `intl`, `pdo_sqlite`.
+- **Zmienne w jobie:** m.in. `APP_SECRET`, `DATABASE_URL` wskazujące na plik **SQLite** w `var/ci.sqlite` (wyłącznie pod rozgrzanie cache i narzędzia — bez konieczności działającego serwera SQL).
+- **Kolejność kroków:**
+  1. `composer install`
+  2. `php bin/console cache:warmup --env=dev` — wymagane m.in. przez Psalma z wtyczką Symfony (odczyt zrzutu kontenera DI)
+  3. `composer test` (PHPUnit)
+  4. `composer cs-check` (PHP CS Fixer, tryb `--dry-run`)
+  5. `composer psalm`
+
+Status ostatniego uruchomienia widać przy znaczku **CI** u góry pliku oraz w zakładce **Actions** na GitHubie:  
+[https://github.com/gmaxsoft/SymfonyModularMonolith/actions](https://github.com/gmaxsoft/SymfonyModularMonolith/actions).
 
 ## Wymagania
 
