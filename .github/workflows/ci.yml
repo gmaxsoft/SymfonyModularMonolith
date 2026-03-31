@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    env:
+      APP_ENV: dev
+      APP_SECRET: 0123456789abcdef0123456789abcdef01234567
+      DATABASE_URL: sqlite:///${{ github.workspace }}/var/ci.sqlite
+
+    steps:
+      - name: Pobranie repozytorium
+        uses: actions/checkout@v4
+
+      - name: Konfiguracja PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: ctype, iconv, mbstring, intl, pdo_sqlite
+          coverage: none
+
+      - name: Przygotowanie katalogu var
+        run: mkdir -p var
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Instalacja zależności Composer
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Rozgrzanie cache Symfony (dla Psalma i kontenera DI)
+        run: php bin/console cache:warmup --env=dev --no-ansi
+
+      - name: PHPUnit
+        run: composer test
+
+      - name: PHP CS Fixer (sprawdzenie stylu)
+        run: composer cs-check
+
+      - name: Psalm
+        run: composer psalm

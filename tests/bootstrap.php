@@ -9,6 +9,6 @@ if (method_exists(Dotenv::class, 'bootEnv')) {
 }
 
 $appDebug = $_SERVER['APP_DEBUG'] ?? false;
-if ($appDebug === true || $appDebug === '1') {
+if (true === $appDebug || '1' === $appDebug) {
     umask(0000);
 }
